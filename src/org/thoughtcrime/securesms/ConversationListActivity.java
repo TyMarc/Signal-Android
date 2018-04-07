@@ -25,9 +25,11 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -40,6 +42,7 @@ import org.thoughtcrime.securesms.notifications.MarkReadReceiver;
 import org.thoughtcrime.securesms.notifications.MessageNotifier;
 import org.thoughtcrime.securesms.permissions.Permissions;
 import org.thoughtcrime.securesms.recipients.Recipient;
+import org.thoughtcrime.securesms.search.SearchFragment;
 import org.thoughtcrime.securesms.service.KeyCachingService;
 import org.thoughtcrime.securesms.util.DynamicLanguage;
 import org.thoughtcrime.securesms.util.DynamicNoActionBarTheme;
@@ -57,9 +60,11 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
   private final DynamicTheme    dynamicTheme    = new DynamicNoActionBarTheme();
   private final DynamicLanguage dynamicLanguage = new DynamicLanguage();
 
-  private ConversationListFragment fragment;
+  private ConversationListFragment conversationListFragment;
+  private SearchFragment           searchFragment;
   private SearchToolbar            searchToolbar;
   private ImageView                searchAction;
+  private ViewGroup                fragmentContainer;
 
   @Override
   protected void onPreCreate() {
@@ -74,9 +79,10 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
     Toolbar toolbar = findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
 
-    searchToolbar = findViewById(R.id.search_toolbar);
-    searchAction  = findViewById(R.id.search_action);
-    fragment      = initFragment(R.id.fragment_container, new ConversationListFragment(), dynamicLanguage.getCurrentLocale());
+    searchToolbar            = findViewById(R.id.search_toolbar);
+    searchAction             = findViewById(R.id.search_action);
+    fragmentContainer        = findViewById(R.id.fragment_container);
+    conversationListFragment = initFragment(R.id.fragment_container, new ConversationListFragment(), dynamicLanguage.getCurrentLocale());
 
     initializeSearchListener();
 
@@ -122,16 +128,31 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
 
     searchToolbar.setListener(new SearchToolbar.SearchListener() {
       @Override
-      public void onSearchTextChange(String text) {
-        if (fragment != null) {
-          fragment.setQueryFilter(text);
+      public void onSearchOpened() {
+        Log.e("SPIDERMAN", "on search opened");
+        if (searchFragment == null) {
+          searchFragment = SearchFragment.newInstance();
+          getSupportFragmentManager().beginTransaction()
+                                     .add(R.id.fragment_container, searchFragment, null)
+                                     .commit();
         }
       }
 
       @Override
-      public void onSearchReset() {
-        if (fragment != null) {
-          fragment.resetQueryFilter();
+      public void onSearchTextChange(String text) {
+        if (searchFragment != null) {
+          searchFragment.updateSearchQuery(text);
+        }
+      }
+
+      @Override
+      public void onSearchClosed() {
+        Log.e("SPIDERMAN", "on search closed");
+        if (searchFragment != null) {
+          getSupportFragmentManager().beginTransaction()
+                                     .remove(searchFragment)
+                                     .commit();
+          searchFragment = null;
         }
       }
     });
