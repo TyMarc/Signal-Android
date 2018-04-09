@@ -21,6 +21,8 @@ public class SearchViewModel extends ViewModel {
   private final MutableLiveData<SearchResult> searchResult;
   private final SearchRepository              searchRepository;
 
+  private String lastQuery;
+
   public SearchViewModel(@NonNull SearchRepository searchRepository) {
     this.searchResult     = new MutableLiveData<>();
     this.searchRepository = searchRepository;
@@ -33,6 +35,11 @@ public class SearchViewModel extends ViewModel {
   public void updateQuery(String query) {
     // TODO: Throttling
     searchRepository.query(query, searchResult::postValue);
+  }
+
+  @NonNull
+  public String getLastQuery() {
+    return lastQuery == null ? "" : lastQuery;
   }
 
   public static class Factory extends ViewModelProvider.NewInstanceFactory {

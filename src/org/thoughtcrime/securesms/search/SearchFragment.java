@@ -1,6 +1,5 @@
 package org.thoughtcrime.securesms.search;
 
-import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -12,8 +11,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import org.thoughtcrime.securesms.R;
+import org.thoughtcrime.securesms.search.model.SearchResult;
+import org.thoughtcrime.securesms.util.StickyHeaderDecoration;
 
 import java.util.concurrent.Executors;
 
@@ -24,7 +26,7 @@ public class SearchFragment extends Fragment {
 
   public static final String TAG = "SearchFragment";
 
-  private View         noResultsView;
+  private TextView     noResultsView;
   private RecyclerView listView;
 
   private SearchViewModel   viewModel;
@@ -57,12 +59,28 @@ public class SearchFragment extends Fragment {
     listAdapter = new SearchListAdapter();
     listView.setAdapter(listAdapter);
     listView.setLayoutManager(new LinearLayoutManager(getContext()));
+    listView.addItemDecoration(new StickyHeaderDecoration(listAdapter, false, false));
   }
 
   @Override
   public void onStart() {
     super.onStart();
-    viewModel.getSearchResult().observe(this, listAdapter::updateResults);
+    viewModel.getSearchResult().observe(this, result -> {
+      result = result != null ? result : SearchResult.EMPTY;
+
+      listAdapter.updateResults(result);
+
+      if (result.size() == 0) {
+        noResultsView.setVisibility(View.VISIBLE);
+        if (viewModel.getLastQuery().length() == 0) {
+          noResultsView.setText(R.string.SearchFragment_begin_searching);
+        } else {
+          noResultsView.setText(getString(R.string.SearchFragment_no_results, viewModel.getLastQuery()));
+        }
+      } else {
+        noResultsView.setVisibility(View.GONE);
+      }
+    });
   }
 
   public void updateSearchQuery(@NonNull String query) {
