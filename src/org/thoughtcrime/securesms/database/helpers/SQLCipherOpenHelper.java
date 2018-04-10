@@ -23,6 +23,7 @@ import org.thoughtcrime.securesms.database.MmsDatabase;
 import org.thoughtcrime.securesms.database.OneTimePreKeyDatabase;
 import org.thoughtcrime.securesms.database.PushDatabase;
 import org.thoughtcrime.securesms.database.RecipientDatabase;
+import org.thoughtcrime.securesms.database.SearchDatabase;
 import org.thoughtcrime.securesms.database.SessionDatabase;
 import org.thoughtcrime.securesms.database.SignedPreKeyDatabase;
 import org.thoughtcrime.securesms.database.SmsDatabase;
@@ -43,8 +44,9 @@ public class SQLCipherOpenHelper extends SQLiteOpenHelper {
   private static final int MIGRATE_SESSIONS_VERSION         = 4;
   private static final int NO_MORE_IMAGE_THUMBNAILS_VERSION = 5;
   private static final int ATTACHMENT_DIMENSIONS            = 6;
+  private static final int FULL_TEXT_SEARCH                 = 8;
 
-  private static final int    DATABASE_VERSION = 6;
+  private static final int    DATABASE_VERSION = 8;
   private static final String DATABASE_NAME    = "signal.db";
 
   private final Context        context;
@@ -84,6 +86,9 @@ public class SQLCipherOpenHelper extends SQLiteOpenHelper {
     db.execSQL(OneTimePreKeyDatabase.CREATE_TABLE);
     db.execSQL(SignedPreKeyDatabase.CREATE_TABLE);
     db.execSQL(SessionDatabase.CREATE_TABLE);
+    for (String sql : SearchDatabase.CREATE_TABLE) {
+      db.execSQL(sql);
+    }
 
     executeStatements(db, SmsDatabase.CREATE_INDEXS);
     executeStatements(db, MmsDatabase.CREATE_INDEXS);
@@ -165,6 +170,10 @@ public class SQLCipherOpenHelper extends SQLiteOpenHelper {
       if (oldVersion < ATTACHMENT_DIMENSIONS) {
         db.execSQL("ALTER TABLE part ADD COLUMN width INTEGER DEFAULT 0");
         db.execSQL("ALTER TABLE part ADD COLUMN height INTEGER DEFAULT 0");
+      }
+
+      if (oldVersion < FULL_TEXT_SEARCH) {
+        FullTextSearchMigrationHelper.migrateToFullTextSearch(db);
       }
 
       db.setTransactionSuccessful();

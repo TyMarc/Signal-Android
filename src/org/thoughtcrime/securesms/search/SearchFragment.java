@@ -14,6 +14,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.thoughtcrime.securesms.R;
+import org.thoughtcrime.securesms.contacts.ContactAccessor;
+import org.thoughtcrime.securesms.database.DatabaseFactory;
 import org.thoughtcrime.securesms.search.model.SearchResult;
 import org.thoughtcrime.securesms.util.StickyHeaderDecoration;
 
@@ -41,7 +43,12 @@ public class SearchFragment extends Fragment {
     super.onCreate(savedInstanceState);
 
     // Note: We essentially construct the dependency graph here. We can move this out in the future.
-    SearchRepository searchRepository = new SearchRepository(Executors.newSingleThreadExecutor());
+    SearchRepository searchRepository = new SearchRepository(getContext(),
+                                                             DatabaseFactory.getSearchDatabase(getContext()),
+                                                             DatabaseFactory.getContactsDatabase(getContext()),
+                                                             DatabaseFactory.getThreadDatabase(getContext()),
+                                                             ContactAccessor.getInstance(),
+                                                             Executors.newSingleThreadExecutor());
     viewModel = ViewModelProviders.of(this, new SearchViewModel.Factory(searchRepository)).get(SearchViewModel.class);
   }
 

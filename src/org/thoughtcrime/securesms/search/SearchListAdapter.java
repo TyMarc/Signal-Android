@@ -10,12 +10,19 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.thoughtcrime.securesms.R;
+import org.thoughtcrime.securesms.search.model.ContactResult;
+import org.thoughtcrime.securesms.search.model.ConversationResult;
+import org.thoughtcrime.securesms.search.model.MessageResult;
 import org.thoughtcrime.securesms.search.model.SearchResult;
 import org.thoughtcrime.securesms.search.model.SearchResultInfo;
 import org.thoughtcrime.securesms.util.StickyHeaderDecoration;
 
 public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter.SearchResultViewHolder>
                                implements StickyHeaderDecoration.StickyHeaderAdapter<SearchListAdapter.HeaderViewHolder> {
+
+  private static final int HEADER_CONVERSATIONS = 1;
+  private static final int HEADER_CONTACTS      = 2;
+  private static final int HEADER_MESSAGES      = 3;
 
   @NonNull
   private SearchResult searchResult = SearchResult.EMPTY;
@@ -29,7 +36,22 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
 
   @Override
   public void onBindViewHolder(@NonNull SearchResultViewHolder holder, int position) {
-    holder.bind(getResultInfo(position));
+    // TODO: Make nicer -- maybe move all position stuff in here?
+
+    ConversationResult conversationResult = getConversationResult(position);
+    if (conversationResult != null) {
+      holder.bind(conversationResult);
+    }
+
+    ContactResult contactResult = getContactResult(position);
+    if (contactResult != null) {
+      holder.bind(contactResult);
+    }
+
+    MessageResult messageResult = getMessageResult(position);
+    if (messageResult != null) {
+      holder.bind(messageResult);
+    }
   }
 
   @Override
@@ -39,7 +61,13 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
 
   @Override
   public long getHeaderId(int position) {
-    return getResultInfo(position).type.ordinal();
+    if (getConversationResult(position) != null) {
+      return HEADER_CONVERSATIONS;
+    } else if (getContactResult(position) != null) {
+      return HEADER_CONTACTS;
+    } else {
+      return HEADER_MESSAGES;
+    }
   }
 
   @Override
@@ -50,7 +78,7 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
 
   @Override
   public void onBindHeaderViewHolder(HeaderViewHolder viewHolder, int position) {
-    viewHolder.bind(getResultInfo(position).type);
+    viewHolder.bind((int) getHeaderId(position));
   }
 
   public void updateResults(@NonNull SearchResult result) {
@@ -58,19 +86,36 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
     notifyDataSetChanged();
   }
 
-  private SearchResultInfo getResultInfo(int position) {
-    int firstContactIndex = searchResult.conversations.size();
-    int firstMessageIndex = firstContactIndex + searchResult.contacts.size();
-
-    if (position < firstContactIndex) {
+  @Nullable
+  private ConversationResult getConversationResult(int position) {
+    if (position < searchResult.conversations.size()) {
       return searchResult.conversations.get(position);
-    } else if (position < firstMessageIndex) {
-      return searchResult.contacts.get(position - firstContactIndex);
-    } else if (position < searchResult.size()) {
-      return searchResult.messages.get(position - firstMessageIndex);
-    } else {
-      throw new IndexOutOfBoundsException("Requested search result out of bounds. Requested: " + position + ", length: " + searchResult.size());
     }
+    return null;
+  }
+
+  @Nullable
+  private ContactResult getContactResult(int position) {
+    if (position >= getFirstContactIndex() && position < getFirstMessageIndex()) {
+      return searchResult.contacts.get(position - getFirstContactIndex());
+    }
+    return null;
+  }
+
+  @Nullable
+  private MessageResult getMessageResult(int position) {
+    if (position >= getFirstMessageIndex() && position < searchResult.size()) {
+      return searchResult.messages.get(position - getFirstMessageIndex());
+    }
+    return null;
+  }
+
+  private int getFirstContactIndex() {
+    return searchResult.conversations.size();
+  }
+
+  private int getFirstMessageIndex() {
+    return getFirstContactIndex() + searchResult.contacts.size();
   }
 
   public static class SearchResultViewHolder extends RecyclerView.ViewHolder {
@@ -88,11 +133,25 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
       sideDescriptorView = itemView.findViewById(R.id.search_item_side_descriptor);
     }
 
-    void bind(@NonNull SearchResultInfo resultInfo) {
+    void bind(@NonNull ConversationResult conversationResult) {
       avatarView.setImageResource(R.drawable.ic_contact_picture);
-      titleView.setText(resultInfo.title);
-      subtitleView.setText(resultInfo.subtitle);
-      sideDescriptorView.setText(resultInfo.sideDescriptor);
+      titleView.setText(conversationResult.title);
+      subtitleView.setText(conversationResult.subtitle);
+      sideDescriptorView.setText("1:00pm");
+    }
+
+    void bind(@NonNull ContactResult contactResult) {
+      avatarView.setImageResource(R.drawable.ic_contact_picture);
+      titleView.setText(contactResult.title);
+      subtitleView.setText(contactResult.subtitle);
+      sideDescriptorView.setText("1:00pm");
+    }
+
+    void bind(@NonNull MessageResult messageResult) {
+      avatarView.setImageResource(R.drawable.ic_contact_picture);
+      titleView.setText(String.valueOf(messageResult.receivedTimestampMs));
+      subtitleView.setText(messageResult.body);
+      sideDescriptorView.setText("1:00pm");
     }
   }
 
@@ -105,15 +164,15 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
       titleView = (TextView) itemView;
     }
 
-    public void bind(@NonNull SearchResultInfo.Type resultType) {
-      switch (resultType) {
-        case CONVERSATION:
+    public void bind(int headerType) {
+      switch (headerType) {
+        case HEADER_CONVERSATIONS:
           titleView.setText("Conversations");
           break;
-        case CONTACT:
+        case HEADER_CONTACTS:
           titleView.setText("Contacts");
           break;
-        case MESSAGE:
+        case HEADER_MESSAGES:
           titleView.setText("Messages");
           break;
       }
