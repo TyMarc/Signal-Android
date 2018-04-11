@@ -4,8 +4,9 @@ import android.Manifest;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
+import android.database.MergeCursor;
 import android.support.annotation.NonNull;
-import android.util.Log;
+import android.text.TextUtils;
 
 import com.annimon.stream.Stream;
 
@@ -13,6 +14,7 @@ import com.annimon.stream.Stream;
 import org.thoughtcrime.securesms.contacts.ContactAccessor;
 import org.thoughtcrime.securesms.contacts.ContactsDatabase;
 import org.thoughtcrime.securesms.database.Address;
+import org.thoughtcrime.securesms.database.CursorList;
 import org.thoughtcrime.securesms.database.SearchDatabase;
 import org.thoughtcrime.securesms.database.ThreadDatabase;
 import org.thoughtcrime.securesms.database.model.ThreadRecord;
@@ -21,7 +23,6 @@ import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.search.model.MessageResult;
 import org.thoughtcrime.securesms.search.model.SearchResult;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -73,71 +74,46 @@ public class SearchRepository {
 
   @NonNull
   public void query(@NonNull String query, @NonNull Callback callback) {
+    if (TextUtils.isEmpty(query)) {
+      callback.onResult(SearchResult.EMPTY);
+      return;
+    }
+
     executor.execute(() -> {
-      String              cleanQuery    = sanitizeQuery(query);
-      List<Recipient>     contacts      = queryContacts(cleanQuery);
-      List<ThreadRecord>  conversations = queryConversations(cleanQuery);
-      List<MessageResult> messages      = queryMessages(cleanQuery);
+      String                    cleanQuery    = sanitizeQuery(query);
+      CursorList<Recipient>     contacts      = queryContacts(cleanQuery);
+      CursorList<ThreadRecord>  conversations = queryConversations(cleanQuery);
+      CursorList<MessageResult> messages      = queryMessages(cleanQuery);
 
       callback.onResult(new SearchResult(contacts, conversations, messages));
     });
   }
 
-  private List<Recipient> queryContacts(String query) {
-    List<Recipient> contacts = new ArrayList<>();
-
+  private CursorList<Recipient> queryContacts(String query) {
     if (!Permissions.hasAny(context, Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS)) {
-      return contacts;
+      return CursorList.emptyList();
     }
 
-    try (Cursor cursor = contactsDatabase.queryTextSecureContacts(query)) {
-      while(cursor.moveToNext()) {
-        Address address = Address.fromExternal(context, cursor.getString(1));
-        contacts.add(Recipient.from(context, address, false));
-      }
-    }
+    Cursor      textSecureContacts = contactsDatabase.queryTextSecureContacts(query);
+    Cursor      systemContacts     = contactsDatabase.querySystemContacts(query);
+    MergeCursor contacts           = new MergeCursor(new Cursor[]{ textSecureContacts, systemContacts });
 
-    try (android.database.Cursor cursor = contactsDatabase.querySystemContacts(query)) {
-      while(cursor.moveToNext()) {
-        Address address = Address.fromExternal(context, cursor.getString(1));
-        contacts.add(Recipient.from(context, address, false));
-      }
-    }
-
-    return contacts;
+    return new CursorList<>(contacts, new RecipientModelBuilder(context));
   }
 
-  private List<ThreadRecord> queryConversations(@NonNull String query) {
+  private CursorList<ThreadRecord> queryConversations(@NonNull String query) {
     List<String>  numbers   = contactAccessor.getNumbersForThreadSearchFilter(context, query);
     List<Address> addresses = Stream.of(numbers).map(number -> Address.fromExternal(context, number)).toList();
 
-
-    List<ThreadRecord> conversations = new ArrayList<>();
-    try (ThreadDatabase.Reader reader = threadDatabase.readerFor(threadDatabase.getFilteredConversationList(addresses))) {
-      ThreadRecord thread;
-      while((thread = reader.getNext()) != null) {
-        conversations.add(thread);
-      }
-    }
-    return conversations;
+    Cursor conversations = threadDatabase.getFilteredConversationList(addresses);
+    return conversations != null ? new CursorList<>(conversations, new ThreadModelBuilder(threadDatabase))
+                                 : CursorList.emptyList();
   }
 
-  private List<MessageResult> queryMessages(@NonNull String query) {
-    List<MessageResult> messages = new ArrayList<>();
-    try(Cursor cursor = searchDatabase.queryMessages(query, 0)) {
-      while (cursor.moveToNext()) {
-        Address   address    = Address.fromSerialized(cursor.getString(0));
-        Recipient recipient  = Recipient.from(context, address, false);
-        String    body       = cursor.getString(1);
-        long      receivedMs = cursor.getLong(2);
-
-        Log.e("SPIDERMAN", "profile avatar: " + recipient.getProfileAvatar());
-        Log.e("SPIDERMAN", "uri: " + recipient.getContactUri());
-
-        messages.add(new MessageResult(recipient, body, receivedMs));
-      }
-    }
-    return messages;
+  private CursorList<MessageResult> queryMessages(@NonNull String query) {
+    Cursor messages = searchDatabase.queryMessages(query, 0);
+    return messages != null ? new CursorList<>(messages, new MessageModelBuilder(context))
+                            : CursorList.emptyList();
   }
 
   /**
@@ -157,6 +133,53 @@ public class SearchRepository {
     return out.toString();
   }
 
+  private static class RecipientModelBuilder implements CursorList.ModelBuilder<Recipient> {
+
+    private final Context context;
+
+    public RecipientModelBuilder(@NonNull Context context) {
+      this.context = context;
+    }
+
+    @Override
+    public Recipient build(@NonNull Cursor cursor) {
+      Address address = Address.fromExternal(context, cursor.getString(1));
+      return Recipient.from(context, address, false);
+    }
+  }
+
+  private static class ThreadModelBuilder implements CursorList.ModelBuilder<ThreadRecord> {
+
+    private final ThreadDatabase threadDatabase;
+
+    public ThreadModelBuilder(@NonNull ThreadDatabase threadDatabase) {
+      this.threadDatabase = threadDatabase;
+    }
+
+    @Override
+    public ThreadRecord build(@NonNull Cursor cursor) {
+      return threadDatabase.readerFor(cursor).getCurrent();
+    }
+  }
+
+  private static class MessageModelBuilder implements CursorList.ModelBuilder<MessageResult> {
+
+    private final Context context;
+
+    public MessageModelBuilder(@NonNull Context context) {
+      this.context = context;
+    }
+
+    @Override
+    public MessageResult build(@NonNull Cursor cursor) {
+      Address   address    = Address.fromSerialized(cursor.getString(0));
+      Recipient recipient  = Recipient.from(context, address, false);
+      String    body       = cursor.getString(1);
+      long      receivedMs = cursor.getLong(2);
+
+      return new MessageResult(recipient, body, receivedMs);
+    }
+  }
 
   public interface Callback {
     void onResult(@NonNull SearchResult result);

@@ -28,12 +28,14 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
   private static final int TYPE_MESSAGES      = 3;
 
   private final GlideRequests glideRequests;
+  private final EventListener eventListener;
 
   @NonNull
   private SearchResult searchResult = SearchResult.EMPTY;
 
-  public SearchListAdapter(@NonNull GlideRequests glideRequests) {
+  public SearchListAdapter(@NonNull GlideRequests glideRequests, @NonNull EventListener eventListener) {
     this.glideRequests = glideRequests;
+    this.eventListener = eventListener;
   }
 
   @NonNull
@@ -49,17 +51,17 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
 
     ThreadRecord conversationResult = getConversationResult(position);
     if (conversationResult != null) {
-      holder.bind(conversationResult, glideRequests);
+      holder.bind(conversationResult, glideRequests, eventListener);
     }
 
     Recipient contactResult = getContactResult(position);
     if (contactResult != null) {
-      holder.bind(contactResult, glideRequests);
+      holder.bind(contactResult, glideRequests, eventListener);
     }
 
     MessageResult messageResult = getMessageResult(position);
     if (messageResult != null) {
-      holder.bind(messageResult, glideRequests);
+      holder.bind(messageResult, glideRequests, eventListener);
     }
   }
 
@@ -102,8 +104,8 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
 
   @Nullable
   private ThreadRecord getConversationResult(int position) {
-    if (position < searchResult.conversations.size()) {
-      return searchResult.conversations.get(position);
+    if (position < searchResult.getConversations().size()) {
+      return searchResult.getConversations().get(position);
     }
     return null;
   }
@@ -111,7 +113,7 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
   @Nullable
   private Recipient getContactResult(int position) {
     if (position >= getFirstContactIndex() && position < getFirstMessageIndex()) {
-      return searchResult.contacts.get(position - getFirstContactIndex());
+      return searchResult.getContacts().get(position - getFirstContactIndex());
     }
     return null;
   }
@@ -119,17 +121,23 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
   @Nullable
   private MessageResult getMessageResult(int position) {
     if (position >= getFirstMessageIndex() && position < searchResult.size()) {
-      return searchResult.messages.get(position - getFirstMessageIndex());
+      return searchResult.getMessages().get(position - getFirstMessageIndex());
     }
     return null;
   }
 
   private int getFirstContactIndex() {
-    return searchResult.conversations.size();
+    return searchResult.getConversations().size();
   }
 
   private int getFirstMessageIndex() {
-    return getFirstContactIndex() + searchResult.contacts.size();
+    return getFirstContactIndex() + searchResult.getContacts().size();
+  }
+
+  public interface EventListener {
+    void onConversationClicked(@NonNull ThreadRecord threadRecord);
+    void onContactClicked(@NonNull Recipient contact);
+    void onMessageClicked(@NonNull MessageResult message);
   }
 
   public static class SearchResultViewHolder extends RecyclerView.ViewHolder {
@@ -141,22 +149,35 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
       root = (ConversationListItem) itemView;
     }
 
-    void bind(@NonNull ThreadRecord conversationResult, @NonNull GlideRequests glideRequests) {
+    void bind(@NonNull ThreadRecord  conversationResult,
+              @NonNull GlideRequests glideRequests,
+              @NonNull EventListener eventListener)
+    {
       // TODO: Locale
       root.bind(conversationResult, glideRequests, Locale.getDefault(), Collections.emptySet(), false);
+      root.setOnClickListener(view -> eventListener.onConversationClicked(conversationResult));
     }
 
-    void bind(@NonNull Recipient contactResult, @NonNull GlideRequests glideRequests) {
+    void bind(@NonNull Recipient     contactResult,
+              @NonNull GlideRequests glideRequests,
+              @NonNull EventListener eventListener)
+    {
       root.bind(contactResult, glideRequests);
+      root.setOnClickListener(view -> eventListener.onContactClicked(contactResult));
     }
 
-    void bind(@NonNull MessageResult messageResult, @NonNull GlideRequests glideRequests) {
+    void bind(@NonNull MessageResult messageResult,
+              @NonNull GlideRequests glideRequests,
+              @NonNull EventListener eventListener)
+    {
       // TODO: Locale
       root.bind(messageResult, glideRequests, Locale.getDefault());
+      root.setOnClickListener(view -> eventListener.onMessageClicked(messageResult));
     }
 
     void recycle() {
       root.unbind();
+      root.setOnClickListener(null);
     }
   }
 
@@ -170,16 +191,15 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
     }
 
     public void bind(int headerType) {
-      // TODO: Strings
       switch (headerType) {
         case TYPE_CONVERSATIONS:
-          titleView.setText("Conversations");
+          titleView.setText(R.string.SearchFragment_header_conversations);
           break;
         case TYPE_CONTACTS:
-          titleView.setText("Contacts");
+          titleView.setText(R.string.SearchFragment_header_contacts);
           break;
         case TYPE_MESSAGES:
-          titleView.setText("Messages");
+          titleView.setText(R.string.SearchFragment_header_messages);
           break;
       }
     }

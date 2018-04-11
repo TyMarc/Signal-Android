@@ -13,10 +13,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import org.thoughtcrime.securesms.ConversationActivity;
+import org.thoughtcrime.securesms.ConversationListActivity;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.contacts.ContactAccessor;
 import org.thoughtcrime.securesms.database.DatabaseFactory;
+import org.thoughtcrime.securesms.database.model.ThreadRecord;
 import org.thoughtcrime.securesms.mms.GlideApp;
+import org.thoughtcrime.securesms.recipients.Recipient;
+import org.thoughtcrime.securesms.search.model.MessageResult;
 import org.thoughtcrime.securesms.search.model.SearchResult;
 import org.thoughtcrime.securesms.util.StickyHeaderDecoration;
 
@@ -25,7 +30,7 @@ import java.util.concurrent.Executors;
 /**
  * A fragment that is displayed to do full-text search of messages, groups, and contacts.
  */
-public class SearchFragment extends Fragment {
+public class SearchFragment extends Fragment implements SearchListAdapter.EventListener {
 
   public static final String TAG = "SearchFragment";
 
@@ -64,7 +69,7 @@ public class SearchFragment extends Fragment {
     noResultsView = view.findViewById(R.id.search_no_results);
     listView      = view.findViewById(R.id.search_list);
 
-    listAdapter = new SearchListAdapter(GlideApp.with(this));
+    listAdapter = new SearchListAdapter(GlideApp.with(this), this);
     listView.setAdapter(listAdapter);
     listView.setLayoutManager(new LinearLayoutManager(getContext()));
     listView.addItemDecoration(new StickyHeaderDecoration(listAdapter, false, false));
@@ -89,6 +94,27 @@ public class SearchFragment extends Fragment {
         noResultsView.setVisibility(View.GONE);
       }
     });
+  }
+
+  @Override
+  public void onConversationClicked(@NonNull ThreadRecord threadRecord) {
+    ConversationListActivity conversationList = (ConversationListActivity) getActivity();
+    if (conversationList != null) {
+      conversationList.onCreateConversation(threadRecord.getThreadId(),
+                                            threadRecord.getRecipient(),
+                                            threadRecord.getDistributionType(),
+                                            threadRecord.getLastSeen());
+    }
+  }
+
+  @Override
+  public void onContactClicked(@NonNull Recipient contact) {
+
+  }
+
+  @Override
+  public void onMessageClicked(@NonNull MessageResult message) {
+
   }
 
   public void updateSearchQuery(@NonNull String query) {

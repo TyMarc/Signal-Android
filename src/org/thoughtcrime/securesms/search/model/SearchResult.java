@@ -2,10 +2,10 @@ package org.thoughtcrime.securesms.search.model;
 
 import android.support.annotation.NonNull;
 
+import org.thoughtcrime.securesms.database.CursorList;
 import org.thoughtcrime.securesms.database.model.ThreadRecord;
 import org.thoughtcrime.securesms.recipients.Recipient;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -14,22 +14,41 @@ import java.util.List;
  */
 public class SearchResult {
 
-  public static final SearchResult EMPTY = new SearchResult(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+  public static final SearchResult EMPTY = new SearchResult(CursorList.emptyList(), CursorList.emptyList(), CursorList.emptyList());
 
-  public final List<Recipient>     contacts;
-  public final List<ThreadRecord>  conversations;
-  public final List<MessageResult> messages;
+  private final CursorList<Recipient>     contacts;
+  private final CursorList<ThreadRecord>  conversations;
+  private final CursorList<MessageResult> messages;
 
-  public SearchResult(@NonNull List<Recipient>     contacts,
-                      @NonNull List<ThreadRecord>  conversations,
-                      @NonNull List<MessageResult> messages)
+  public SearchResult(@NonNull CursorList<Recipient>     contacts,
+                      @NonNull CursorList<ThreadRecord>  conversations,
+                      @NonNull CursorList<MessageResult> messages)
   {
-    this.contacts      = Collections.unmodifiableList(contacts);
-    this.conversations = Collections.unmodifiableList(conversations);
-    this.messages      = Collections.unmodifiableList(messages);
+    this.contacts      = contacts;
+    this.conversations = conversations;
+    this.messages      = messages;
   }
+
+  public List<Recipient> getContacts() {
+    return contacts;
+  }
+
+  public List<ThreadRecord> getConversations() {
+    return conversations;
+  }
+
+  public List<MessageResult> getMessages() {
+    return messages;
+  }
+
 
   public int size() {
     return contacts.size() + conversations.size() + messages.size();
+  }
+
+  public void close() {
+    contacts.close();
+    conversations.close();
+    messages.close();
   }
 }

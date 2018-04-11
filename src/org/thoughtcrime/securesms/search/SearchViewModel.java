@@ -16,31 +16,58 @@ import org.thoughtcrime.securesms.search.model.SearchResult;
  * things like {@link android.content.Context}, {@link android.view.View},
  * {@link android.support.v4.app.Fragment}, etc.
  */
-public class SearchViewModel extends ViewModel {
+class SearchViewModel extends ViewModel {
 
-  private final MutableLiveData<SearchResult> searchResult;
-  private final SearchRepository              searchRepository;
+  private final ClosingLiveData  searchResult;
+  private final SearchRepository searchRepository;
 
   private String lastQuery;
 
-  public SearchViewModel(@NonNull SearchRepository searchRepository) {
-    this.searchResult     = new MutableLiveData<>();
+  SearchViewModel(@NonNull SearchRepository searchRepository) {
+    this.searchResult     = new ClosingLiveData();
     this.searchRepository = searchRepository;
   }
 
-  public LiveData<SearchResult> getSearchResult() {
+  LiveData<SearchResult> getSearchResult() {
     return searchResult;
   }
 
-  public void updateQuery(String query) {
+  void updateQuery(String query) {
     // TODO: Throttling?
     lastQuery = query;
     searchRepository.query(query, searchResult::postValue);
   }
 
   @NonNull
-  public String getLastQuery() {
+  String getLastQuery() {
     return lastQuery == null ? "" : lastQuery;
+  }
+
+  @Override
+  protected void onCleared() {
+    searchResult.close();
+  }
+
+  /**
+   * Ensures that the previous {@link SearchResult} is always closed whenever we set a new one.
+   */
+  private static class ClosingLiveData extends MutableLiveData<SearchResult> {
+
+    @Override
+    public void setValue(SearchResult value) {
+      SearchResult previous = getValue();
+      if (previous != null) {
+        previous.close();
+      }
+      super.setValue(value);
+    }
+
+    public void close() {
+      SearchResult value = getValue();
+      if (value != null) {
+        value.close();
+      }
+    }
   }
 
   public static class Factory extends ViewModelProvider.NewInstanceFactory {
