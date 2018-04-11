@@ -1,6 +1,7 @@
 package org.thoughtcrime.securesms.search;
 
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -18,6 +19,7 @@ import org.thoughtcrime.securesms.ConversationListActivity;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.contacts.ContactAccessor;
 import org.thoughtcrime.securesms.database.DatabaseFactory;
+import org.thoughtcrime.securesms.database.ThreadDatabase;
 import org.thoughtcrime.securesms.database.model.ThreadRecord;
 import org.thoughtcrime.securesms.mms.GlideApp;
 import org.thoughtcrime.securesms.recipients.Recipient;
@@ -109,7 +111,14 @@ public class SearchFragment extends Fragment implements SearchListAdapter.EventL
 
   @Override
   public void onContactClicked(@NonNull Recipient contact) {
+    Intent intent = new Intent(getContext(), ConversationActivity.class);
+    intent.putExtra(ConversationActivity.ADDRESS_EXTRA, contact.getAddress());
 
+    long existingThread = DatabaseFactory.getThreadDatabase(getContext()).getThreadIdIfExistsFor(contact);
+
+    intent.putExtra(ConversationActivity.THREAD_ID_EXTRA, existingThread);
+    intent.putExtra(ConversationActivity.DISTRIBUTION_TYPE_EXTRA, ThreadDatabase.DistributionTypes.DEFAULT);
+    startActivity(intent);
   }
 
   @Override
