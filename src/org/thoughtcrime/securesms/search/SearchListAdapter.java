@@ -6,52 +6,66 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.thoughtcrime.securesms.ConversationListItem;
 import org.thoughtcrime.securesms.R;
-import org.thoughtcrime.securesms.search.model.ContactResult;
-import org.thoughtcrime.securesms.search.model.ConversationResult;
+import org.thoughtcrime.securesms.database.model.ThreadRecord;
+import org.thoughtcrime.securesms.mms.GlideRequests;
+import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.search.model.MessageResult;
 import org.thoughtcrime.securesms.search.model.SearchResult;
-import org.thoughtcrime.securesms.search.model.SearchResultInfo;
 import org.thoughtcrime.securesms.util.StickyHeaderDecoration;
+
+import java.util.Collections;
+import java.util.Locale;
 
 public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter.SearchResultViewHolder>
                                implements StickyHeaderDecoration.StickyHeaderAdapter<SearchListAdapter.HeaderViewHolder> {
 
-  private static final int HEADER_CONVERSATIONS = 1;
-  private static final int HEADER_CONTACTS      = 2;
-  private static final int HEADER_MESSAGES      = 3;
+  private static final int TYPE_CONVERSATIONS = 1;
+  private static final int TYPE_CONTACTS      = 2;
+  private static final int TYPE_MESSAGES      = 3;
+
+  private final GlideRequests glideRequests;
 
   @NonNull
   private SearchResult searchResult = SearchResult.EMPTY;
+
+  public SearchListAdapter(@NonNull GlideRequests glideRequests) {
+    this.glideRequests = glideRequests;
+  }
 
   @NonNull
   @Override
   public SearchResultViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
     return new SearchResultViewHolder(LayoutInflater.from(parent.getContext())
-                                                    .inflate(R.layout.item_search_result, parent, false));
+                                                    .inflate(R.layout.conversation_list_item_view, parent, false));
   }
 
   @Override
   public void onBindViewHolder(@NonNull SearchResultViewHolder holder, int position) {
     // TODO: Make nicer -- maybe move all position stuff in here?
 
-    ConversationResult conversationResult = getConversationResult(position);
+    ThreadRecord conversationResult = getConversationResult(position);
     if (conversationResult != null) {
-      holder.bind(conversationResult);
+      holder.bind(conversationResult, glideRequests);
     }
 
-    ContactResult contactResult = getContactResult(position);
+    Recipient contactResult = getContactResult(position);
     if (contactResult != null) {
-      holder.bind(contactResult);
+      holder.bind(contactResult, glideRequests);
     }
 
     MessageResult messageResult = getMessageResult(position);
     if (messageResult != null) {
-      holder.bind(messageResult);
+      holder.bind(messageResult, glideRequests);
     }
+  }
+
+  @Override
+  public void onViewRecycled(SearchResultViewHolder holder) {
+    holder.recycle();
   }
 
   @Override
@@ -62,11 +76,11 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
   @Override
   public long getHeaderId(int position) {
     if (getConversationResult(position) != null) {
-      return HEADER_CONVERSATIONS;
+      return TYPE_CONVERSATIONS;
     } else if (getContactResult(position) != null) {
-      return HEADER_CONTACTS;
+      return TYPE_CONTACTS;
     } else {
-      return HEADER_MESSAGES;
+      return TYPE_MESSAGES;
     }
   }
 
@@ -87,7 +101,7 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
   }
 
   @Nullable
-  private ConversationResult getConversationResult(int position) {
+  private ThreadRecord getConversationResult(int position) {
     if (position < searchResult.conversations.size()) {
       return searchResult.conversations.get(position);
     }
@@ -95,7 +109,7 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
   }
 
   @Nullable
-  private ContactResult getContactResult(int position) {
+  private Recipient getContactResult(int position) {
     if (position >= getFirstContactIndex() && position < getFirstMessageIndex()) {
       return searchResult.contacts.get(position - getFirstContactIndex());
     }
@@ -120,38 +134,29 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
 
   public static class SearchResultViewHolder extends RecyclerView.ViewHolder {
 
-    private final ImageView avatarView;
-    private final TextView  titleView;
-    private final TextView  subtitleView;
-    private final TextView  sideDescriptorView;
+    private final ConversationListItem root;
 
     public SearchResultViewHolder(View itemView) {
       super(itemView);
-      avatarView         = itemView.findViewById(R.id.search_item_avatar);
-      titleView          = itemView.findViewById(R.id.search_item_title);
-      subtitleView       = itemView.findViewById(R.id.search_item_subtitle);
-      sideDescriptorView = itemView.findViewById(R.id.search_item_side_descriptor);
+      root = (ConversationListItem) itemView;
     }
 
-    void bind(@NonNull ConversationResult conversationResult) {
-      avatarView.setImageResource(R.drawable.ic_contact_picture);
-      titleView.setText(conversationResult.title);
-      subtitleView.setText(conversationResult.subtitle);
-      sideDescriptorView.setText("1:00pm");
+    void bind(@NonNull ThreadRecord conversationResult, @NonNull GlideRequests glideRequests) {
+      // TODO: Locale
+      root.bind(conversationResult, glideRequests, Locale.getDefault(), Collections.emptySet(), false);
     }
 
-    void bind(@NonNull ContactResult contactResult) {
-      avatarView.setImageResource(R.drawable.ic_contact_picture);
-      titleView.setText(contactResult.title);
-      subtitleView.setText(contactResult.subtitle);
-      sideDescriptorView.setText("1:00pm");
+    void bind(@NonNull Recipient contactResult, @NonNull GlideRequests glideRequests) {
+      root.bind(contactResult, glideRequests);
     }
 
-    void bind(@NonNull MessageResult messageResult) {
-      avatarView.setImageResource(R.drawable.ic_contact_picture);
-      titleView.setText(String.valueOf(messageResult.receivedTimestampMs));
-      subtitleView.setText(messageResult.body);
-      sideDescriptorView.setText("1:00pm");
+    void bind(@NonNull MessageResult messageResult, @NonNull GlideRequests glideRequests) {
+      // TODO: Locale
+      root.bind(messageResult, glideRequests, Locale.getDefault());
+    }
+
+    void recycle() {
+      root.unbind();
     }
   }
 
@@ -165,14 +170,15 @@ public class SearchListAdapter extends    RecyclerView.Adapter<SearchListAdapter
     }
 
     public void bind(int headerType) {
+      // TODO: Strings
       switch (headerType) {
-        case HEADER_CONVERSATIONS:
+        case TYPE_CONVERSATIONS:
           titleView.setText("Conversations");
           break;
-        case HEADER_CONTACTS:
+        case TYPE_CONTACTS:
           titleView.setText("Contacts");
           break;
-        case HEADER_MESSAGES:
+        case TYPE_MESSAGES:
           titleView.setText("Messages");
           break;
       }

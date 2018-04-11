@@ -24,6 +24,7 @@ import android.graphics.drawable.RippleDrawable;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.support.annotation.NonNull;
+import android.text.Html;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.ImageView;
@@ -38,13 +39,16 @@ import org.thoughtcrime.securesms.components.DeliveryStatusView;
 import org.thoughtcrime.securesms.components.FromTextView;
 import org.thoughtcrime.securesms.components.ThumbnailView;
 import org.thoughtcrime.securesms.database.model.ThreadRecord;
+import org.thoughtcrime.securesms.mms.GlideRequest;
 import org.thoughtcrime.securesms.mms.GlideRequests;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientModifiedListener;
+import org.thoughtcrime.securesms.search.model.MessageResult;
 import org.thoughtcrime.securesms.util.DateUtils;
 import org.thoughtcrime.securesms.util.Util;
 import org.thoughtcrime.securesms.util.ViewUtil;
 
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Set;
 
@@ -142,6 +146,46 @@ public class ConversationListItem extends RelativeLayout
     setRippleColor(recipient);
     setUnreadIndicator(thread);
     this.contactPhotoImage.setAvatar(glideRequests, recipient, true);
+  }
+
+  public void bind(@NonNull Recipient contact, @NonNull GlideRequests glideRequests) {
+    this.selectedThreads = Collections.emptySet();
+    this.recipient       = contact;
+    this.glideRequests   = glideRequests;
+
+    this.recipient.addListener(this);
+
+    fromView.setText(recipient, true);
+    subjectView.setText(contact.getAddress().toPhoneString());
+    dateView.setText("");
+    archivedView.setVisibility(GONE);
+    unreadIndicator.setVisibility(GONE);
+    deliveryStatusIndicator.setNone();
+    alertView.setNone();
+
+    setBatchState(false);
+    setRippleColor(contact);
+    contactPhotoImage.setAvatar(glideRequests, recipient, false);
+  }
+
+  public void bind(@NonNull MessageResult messageResult, @NonNull GlideRequests glideRequests, @NonNull Locale locale) {
+    this.selectedThreads = Collections.emptySet();
+    this.recipient       = messageResult.recipient;
+    this.glideRequests   = glideRequests;
+
+    this.recipient.addListener(this);
+
+    fromView.setText(recipient, true);
+    subjectView.setText(Html.fromHtml(messageResult.body));
+    dateView.setText(DateUtils.getBriefRelativeTimeSpanString(getContext(), locale, messageResult.receivedTimestampMs));
+    archivedView.setVisibility(GONE);
+    unreadIndicator.setVisibility(GONE);
+    deliveryStatusIndicator.setNone();
+    alertView.setNone();
+
+    setBatchState(false);
+    setRippleColor(recipient);
+    contactPhotoImage.setAvatar(glideRequests, recipient, false);
   }
 
   @Override

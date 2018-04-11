@@ -16,6 +16,7 @@ import android.widget.TextView;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.contacts.ContactAccessor;
 import org.thoughtcrime.securesms.database.DatabaseFactory;
+import org.thoughtcrime.securesms.mms.GlideApp;
 import org.thoughtcrime.securesms.search.model.SearchResult;
 import org.thoughtcrime.securesms.util.StickyHeaderDecoration;
 
@@ -63,7 +64,7 @@ public class SearchFragment extends Fragment {
     noResultsView = view.findViewById(R.id.search_no_results);
     listView      = view.findViewById(R.id.search_list);
 
-    listAdapter = new SearchListAdapter();
+    listAdapter = new SearchListAdapter(GlideApp.with(this));
     listView.setAdapter(listAdapter);
     listView.setLayoutManager(new LinearLayoutManager(getContext()));
     listView.addItemDecoration(new StickyHeaderDecoration(listAdapter, false, false));

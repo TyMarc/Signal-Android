@@ -2,6 +2,9 @@ package org.thoughtcrime.securesms.search.model;
 
 import android.support.annotation.NonNull;
 
+import org.thoughtcrime.securesms.database.model.ThreadRecord;
+import org.thoughtcrime.securesms.recipients.Recipient;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -13,13 +16,13 @@ public class SearchResult {
 
   public static final SearchResult EMPTY = new SearchResult(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 
-  public final List<ContactResult>      contacts;
-  public final List<ConversationResult> conversations;
-  public final List<MessageResult>      messages;
+  public final List<Recipient>     contacts;
+  public final List<ThreadRecord>  conversations;
+  public final List<MessageResult> messages;
 
-  public SearchResult(@NonNull List<ContactResult>      contacts,
-                      @NonNull List<ConversationResult> conversations,
-                      @NonNull List<MessageResult>      messages)
+  public SearchResult(@NonNull List<Recipient>     contacts,
+                      @NonNull List<ThreadRecord>  conversations,
+                      @NonNull List<MessageResult> messages)
   {
     this.contacts      = Collections.unmodifiableList(contacts);
     this.conversations = Collections.unmodifiableList(conversations);

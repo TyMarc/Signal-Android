@@ -33,7 +33,8 @@ public class SearchViewModel extends ViewModel {
   }
 
   public void updateQuery(String query) {
-    // TODO: Throttling
+    // TODO: Throttling?
+    lastQuery = query;
     searchRepository.query(query, searchResult::postValue);
   }
 

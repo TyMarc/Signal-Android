@@ -1,18 +1,20 @@
 package org.thoughtcrime.securesms.search.model;
 
-import android.net.Uri;
+import android.support.annotation.NonNull;
+
+import org.thoughtcrime.securesms.recipients.Recipient;
 
 /**
  * Represents a search result for a message
  */
 public class MessageResult {
 
-  public final Uri    avatarUri;
-  public final String body;
-  public final long   receivedTimestampMs;
+  public final Recipient recipient;
+  public final String    body;
+  public final long      receivedTimestampMs;
 
-  public MessageResult(Uri avatarUri, String body, long receivedTimestampMs) {
-    this.avatarUri           = avatarUri;
+  public MessageResult(@NonNull Recipient recipient, @NonNull String body, long receivedTimestampMs) {
+    this.recipient           = recipient;
     this.body                = body;
     this.receivedTimestampMs = receivedTimestampMs;
   }
