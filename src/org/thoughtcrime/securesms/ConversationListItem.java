@@ -165,7 +165,7 @@ public class ConversationListItem extends RelativeLayout
 
     setBatchState(false);
     setRippleColor(contact);
-    contactPhotoImage.setAvatar(glideRequests, recipient, false);
+    contactPhotoImage.setAvatar(glideRequests, recipient, true);
   }
 
   public void bind(@NonNull MessageResult messageResult, @NonNull GlideRequests glideRequests, @NonNull Locale locale) {
@@ -185,7 +185,7 @@ public class ConversationListItem extends RelativeLayout
 
     setBatchState(false);
     setRippleColor(recipient);
-    contactPhotoImage.setAvatar(glideRequests, recipient, false);
+    contactPhotoImage.setAvatar(glideRequests, recipient, true);
   }
 
   @Override
