@@ -1,7 +1,9 @@
 package org.thoughtcrime.securesms.search;
 
+import android.annotation.SuppressLint;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -9,6 +11,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -121,9 +124,31 @@ public class SearchFragment extends Fragment implements SearchListAdapter.EventL
     startActivity(intent);
   }
 
+  @SuppressLint("StaticFieldLeak")
   @Override
   public void onMessageClicked(@NonNull MessageResult message) {
+    new AsyncTask<Void, Void, Pair<Long, Integer>>() {
+      @Override
+      protected Pair<Long, Integer> doInBackground(Void... voids) {
+        long threadId         = DatabaseFactory.getThreadDatabase(getContext()).getThreadIdFor(message.recipient);
+        int  startingPosition = DatabaseFactory.getMmsSmsDatabase(getContext()).getMessagePositionInConversation(threadId, message.receivedTimestampMs);
+        startingPosition = Math.max(0, startingPosition);
 
+        return new Pair<>(threadId, startingPosition);
+      }
+
+      @Override
+      protected void onPostExecute(Pair<Long, Integer> data) {
+        ConversationListActivity conversationList = (ConversationListActivity) getActivity();
+        if (conversationList != null) {
+          conversationList.openConversation(data.first,
+                                            message.recipient,
+                                            ThreadDatabase.DistributionTypes.DEFAULT,
+                                            -1,
+                                            data.second);
+        }
+      }
+    }.execute();
   }
 
   public void updateSearchQuery(@NonNull String query) {

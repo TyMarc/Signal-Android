@@ -177,12 +177,17 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
 
   @Override
   public void onCreateConversation(long threadId, Recipient recipient, int distributionType, long lastSeen) {
+    openConversation(threadId, recipient, distributionType, lastSeen, 0);
+  }
+
+  public void openConversation(long threadId, Recipient recipient, int distributionType, long lastSeen, int startingPosition) {
     Intent intent = new Intent(this, ConversationActivity.class);
     intent.putExtra(ConversationActivity.ADDRESS_EXTRA, recipient.getAddress());
     intent.putExtra(ConversationActivity.THREAD_ID_EXTRA, threadId);
     intent.putExtra(ConversationActivity.DISTRIBUTION_TYPE_EXTRA, distributionType);
     intent.putExtra(ConversationActivity.TIMING_EXTRA, System.currentTimeMillis());
     intent.putExtra(ConversationActivity.LAST_SEEN_EXTRA, lastSeen);
+    intent.putExtra(ConversationActivity.STARTING_POSITION_EXTRA, startingPosition);
 
     startActivity(intent);
     overridePendingTransition(R.anim.slide_from_right, R.anim.fade_scale_out);
