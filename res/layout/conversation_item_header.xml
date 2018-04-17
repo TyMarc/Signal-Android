@@ -14,8 +14,8 @@
               android:paddingRight="6dp"
               android:paddingTop="3dp"
               android:paddingBottom="3dp"
-              android:textColor="@color/white"
-              android:background="?conversation_item_header_background"
+        android:fontFamily="sans-serif-light"
+              android:textColor="?conversation_item_sent_text_secondary_color"
               android:textSize="14sp"
               tools:text="March 1, 2015" />
 </FrameLayout>
