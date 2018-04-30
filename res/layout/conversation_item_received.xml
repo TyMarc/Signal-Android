@@ -15,9 +15,7 @@
 
     <RelativeLayout android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
                     android:layout_marginLeft="9dp"
-                    android:layout_marginBottom="6dp"
                     android:layout_marginRight="0dp">
 
         <org.thoughtcrime.securesms.components.AvatarImageView
@@ -25,20 +23,24 @@
             android:foreground="@drawable/contact_photo_background"
             android:layout_width="40dp"
             android:layout_height="40dp"
+            android:layout_marginTop="2dp"
             android:layout_alignParentLeft="true"
-            android:layout_alignParentBottom="true"
             android:cropToPadding="true"
             android:contentDescription="@string/conversation_item_received__contact_photo_description" />
+
+        <View
+            android:id="@+id/padding_view"
+            android:layout_width="40dp"
+            android:layout_height="0dp" />
 
         <LinearLayout android:id="@+id/group_sender_holder"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_toRightOf="@id/padding_view"
             android:orientation="horizontal"
             android:visibility="gone"
-            android:layout_toRightOf="@id/contact_photo"
             android:paddingRight="4dp"
-            android:paddingLeft="8dp"
-            tools:visibility="visible">
+            tools:visibility="gone">
 
             <TextView android:id="@+id/group_message_sender"
                 android:layout_width="wrap_content"
@@ -62,68 +64,19 @@
                 android:textSize="13sp"
                 android:maxLines="1"
                 android:ellipsize="end"
+                android:visibility="gone"
                 tools:text="~Clement Duval"/>
 
         </LinearLayout>
 
-        <LinearLayout android:id="@+id/body_bubble"
-                      android:layout_width="wrap_content"
-                      android:layout_height="wrap_content"
-            android:layout_below="@id/group_sender_holder"
-                      android:layout_toRightOf="@id/contact_photo"
-                      android:layout_marginRight="35dp"
-                      android:background="@drawable/received_bubble"
-                      android:orientation="vertical"
-                      tools:backgroundTint="@color/blue_900">
-
-            <org.thoughtcrime.securesms.components.QuoteView
-                    android:id="@+id/quote_view"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="3dp"
-                    android:visibility="gone"
-                    app:message_type="incoming"
-                    tools:visibility="visible"/>
-
-            <ViewStub
-                    android:id="@+id/image_view_stub"
-                    android:layout="@layout/conversation_item_received_thumbnail"
-                    android:layout_width="@dimen/media_bubble_default_dimens"
-                    android:layout_height="@dimen/media_bubble_default_dimens"/>
-
-            <ViewStub
-                    android:id="@+id/audio_view_stub"
-                    android:layout="@layout/conversation_item_received_audio"
-                    android:layout_width="210dp"
-                    android:layout_height="wrap_content"/>
-
-            <ViewStub android:id="@+id/document_view_stub"
-                      android:layout="@layout/conversation_item_received_document"
-                      android:layout_width="210dp"
-                      android:layout_height="wrap_content"/>
-
-            <org.thoughtcrime.securesms.components.emoji.EmojiTextView
-                    android:id="@+id/conversation_item_body"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:paddingLeft="4dp"
-                    android:paddingRight="4dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="?conversation_item_received_text_primary_color"
-                    android:textColorLink="?conversation_item_received_text_primary_color"
-                    android:textSize="@dimen/conversation_item_body_text_size"
-                    app:scaleEmojis="true"
-                    tools:text="boop"/>
-        </LinearLayout>
-
-        <LinearLayout android:layout_width="wrap_content"
+        <LinearLayout
+            android:id="@+id/time_container"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingTop="2dip"
-            android:paddingLeft="4dp"
             android:paddingRight="4dp"
             android:orientation="horizontal"
-            android:layout_below="@id/body_bubble"
-            android:layout_toRightOf="@id/contact_photo"
+            android:layout_toRightOf="@id/group_sender_holder"
+            android:visibility="gone"
             android:gravity="left">
 
             <ImageView android:id="@+id/insecure_indicator"
@@ -192,6 +145,59 @@
                 android:visibility="gone"
                 tools:visibility="visible"
                 tools:text="from SIM1"/>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/body_bubble"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:gravity="center_vertical"
+            android:layout_below="@id/group_sender_holder"
+                      android:layout_toRightOf="@id/padding_view"
+                      android:layout_marginRight="35dp"
+                      android:background="@drawable/received_bubble"
+                      android:orientation="vertical"
+                      tools:backgroundTint="@color/blue_900">
+
+            <org.thoughtcrime.securesms.components.QuoteView
+                    android:id="@+id/quote_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="3dp"
+                    android:visibility="gone"
+                    app:message_type="incoming"
+                    tools:visibility="gone"/>
+
+            <ViewStub
+                    android:id="@+id/image_view_stub"
+                    android:layout="@layout/conversation_item_received_thumbnail"
+                    android:layout_width="@dimen/media_bubble_default_dimens"
+                    android:layout_height="@dimen/media_bubble_default_dimens"/>
+
+            <ViewStub
+                    android:id="@+id/audio_view_stub"
+                    android:layout="@layout/conversation_item_received_audio"
+                    android:layout_width="210dp"
+                    android:layout_height="wrap_content"/>
+
+            <ViewStub android:id="@+id/document_view_stub"
+                      android:layout="@layout/conversation_item_received_document"
+                      android:layout_width="210dp"
+                      android:layout_height="wrap_content"/>
+
+            <org.thoughtcrime.securesms.components.emoji.EmojiTextView
+                    android:id="@+id/conversation_item_body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingLeft="4dp"
+                    android:paddingRight="4dp"
+                android:paddingBottom="2dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="?conversation_item_received_text_primary_color"
+                    android:textColorLink="?conversation_item_received_text_primary_color"
+                    android:textSize="@dimen/conversation_item_body_text_size"
+                    app:scaleEmojis="true"
+                    tools:text="boop"/>
         </LinearLayout>
 
         <org.thoughtcrime.securesms.components.AlertView

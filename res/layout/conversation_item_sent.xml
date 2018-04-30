@@ -14,9 +14,9 @@
 
     <RelativeLayout android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="2dp"
                     android:layout_marginLeft="6dp"
-                    android:layout_marginBottom="6dp"
+                    android:layout_marginBottom="2dp"
                     android:layout_marginRight="0dp">
 
         <org.thoughtcrime.securesms.components.AlertView
@@ -70,6 +70,7 @@
                     android:layout_height="wrap_content"
                     android:paddingLeft="4dp"
                     android:paddingRight="4dp"
+                    android:paddingBottom="2dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textColor="?conversation_item_sent_text_primary_color"
                     android:textColorLink="?conversation_item_sent_text_primary_color"
@@ -79,7 +80,7 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/indicators_layout"
+            android:id="@+id/time_container"
             android:layout_below="@id/body_bubble"
             android:layout_alignParentRight="true"
             android:layout_width="wrap_content"
@@ -193,7 +194,7 @@
         <TextView android:id="@+id/indicator_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/indicators_layout"
+            android:layout_below="@id/time_container"
             android:layout_alignParentRight="true"
             android:paddingRight="5dip"
             android:paddingLeft="5dip"

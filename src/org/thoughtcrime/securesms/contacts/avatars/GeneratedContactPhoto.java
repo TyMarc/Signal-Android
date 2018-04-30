@@ -47,7 +47,11 @@ public class GeneratedContactPhoto implements FallbackContactPhoto {
     if (cleanedName.isEmpty()) {
       return "#";
     } else {
-      return new StringBuilder().appendCodePoint(cleanedName.codePointAt(0)).toString();
+      StringBuilder initials = new StringBuilder();
+      for (String s : name.split(" ")) {
+        initials.append(s.charAt(0));
+      }
+      return initials.toString();
     }
   }
 

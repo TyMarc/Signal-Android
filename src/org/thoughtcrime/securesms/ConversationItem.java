@@ -112,6 +112,8 @@ public class ConversationItem extends LinearLayout
   private boolean       groupThread;
   private Recipient     recipient;
   private GlideRequests glideRequests;
+  private boolean isSameRecipient;
+  private boolean isShowTime;
 
   protected View             bodyBubble;
   private QuoteView          quoteView;
@@ -126,6 +128,8 @@ public class ConversationItem extends LinearLayout
   private AvatarImageView    contactPhoto;
   private DeliveryStatusView deliveryStatusIndicator;
   private AlertView          alertView;
+  private View               timeContainer;
+  private View               paddingView;
 
   private @NonNull  Set<MessageRecord>   batchSelected = new HashSet<>();
   private @NonNull  Recipient            conversationRecipient;
@@ -179,6 +183,8 @@ public class ConversationItem extends LinearLayout
     this.expirationTimer         =            findViewById(R.id.expiration_indicator);
     this.groupSenderHolder       =            findViewById(R.id.group_sender_holder);
     this.quoteView               =            findViewById(R.id.quote_view);
+    this.timeContainer           =            findViewById(R.id.time_container);
+    this.paddingView             =            findViewById(R.id.padding_view);
 
     setOnClickListener(new ClickListener(null));
 
@@ -194,7 +200,9 @@ public class ConversationItem extends LinearLayout
                    @NonNull Locale             locale,
                    @NonNull Set<MessageRecord> batchSelected,
                    @NonNull Recipient          conversationRecipient,
-                            boolean            pulseHighlight)
+                            boolean            pulseHighlight,
+                   boolean isSameRecipient,
+                   boolean isShowTime)
   {
     this.messageRecord          = messageRecord;
     this.locale                 = locale;
@@ -203,6 +211,9 @@ public class ConversationItem extends LinearLayout
     this.conversationRecipient  = conversationRecipient;
     this.groupThread            = conversationRecipient.isGroupRecipient();
     this.recipient              = messageRecord.getIndividualRecipient();
+    this.isSameRecipient = isSameRecipient;
+    this.isShowTime = isShowTime;
+
 
     this.recipient.addListener(this);
     this.conversationRecipient.addListener(this);
@@ -228,27 +239,6 @@ public class ConversationItem extends LinearLayout
   @Override
   public void onLayout(boolean changed, int left, int top, int right, int bottom) {
     super.onLayout(changed, left, top, right, bottom);
-
-    if (groupSenderHolder != null && groupSenderHolder.getVisibility() == View.VISIBLE) {
-      View content = (View) groupSenderHolder.getParent();
-
-      groupSenderHolder.layout(content.getPaddingLeft(), content.getPaddingTop(),
-                               content.getWidth() - content.getPaddingRight(),
-                               content.getPaddingTop() + groupSenderHolder.getMeasuredHeight());
-
-
-      if (ViewCompat.getLayoutDirection(groupSenderProfileName) == ViewCompat.LAYOUT_DIRECTION_RTL) {
-        groupSenderProfileName.layout(groupSenderHolder.getPaddingLeft(),
-                                      groupSenderHolder.getPaddingTop(),
-                                      groupSenderHolder.getPaddingLeft() + groupSenderProfileName.getWidth(),
-                                      groupSenderHolder.getPaddingTop() + groupSenderProfileName.getHeight());
-      } else {
-        groupSenderProfileName.layout(groupSenderHolder.getWidth() - groupSenderHolder.getPaddingRight() - groupSenderProfileName.getWidth(),
-                                      groupSenderHolder.getPaddingTop(),
-                                      groupSenderHolder.getWidth() - groupSenderProfileName.getPaddingRight(),
-                                      groupSenderHolder.getPaddingTop() + groupSenderProfileName.getHeight());
-      }
-    }
   }
 
   @Override
@@ -297,9 +287,24 @@ public class ConversationItem extends LinearLayout
 
   private void setBubbleState(MessageRecord messageRecord, Recipient recipient) {
     if (messageRecord.isOutgoing()) {
+      if(isSameRecipient) {
+        bodyBubble.setBackgroundResource(R.drawable.sent_bubble_again);
+      } else {
+        bodyBubble.setBackgroundResource(R.drawable.sent_bubble);
+      }
       bodyBubble.getBackground().setColorFilter(defaultBubbleColor, PorterDuff.Mode.MULTIPLY);
       if (mediaThumbnailStub.resolved()) mediaThumbnailStub.get().setBackgroundColorHint(defaultBubbleColor);
     } else {
+      if(isSameRecipient) {
+        bodyBubble.setBackgroundResource(R.drawable.received_bubble_no_avatar);
+      } else {
+        bodyBubble.setBackgroundResource(R.drawable.received_bubble);
+      }
+      if(groupThread) {
+        paddingView.setVisibility(View.VISIBLE);
+      } else {
+        paddingView.setVisibility(View.GONE);
+      }
       int color = recipient.getColor().toConversationColor(context);
       bodyBubble.getBackground().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
       if (mediaThumbnailStub.resolved()) mediaThumbnailStub.get().setBackgroundColorHint(color);
@@ -385,7 +390,7 @@ public class ConversationItem extends LinearLayout
   }
 
   private boolean hasQuote(MessageRecord messageRecord) {
-    return messageRecord.isMms() && ((MmsMessageRecord)messageRecord).getQuote() != null;
+    return messageRecord != null && messageRecord.isMms() && ((MmsMessageRecord)messageRecord).getQuote() != null;
   }
 
   private void setBodyText(MessageRecord messageRecord) {
@@ -460,6 +465,8 @@ public class ConversationItem extends LinearLayout
 
     if (messageRecord.isOutgoing() || !groupThread) {
       contactPhoto.setVisibility(View.GONE);
+    } else if(isSameRecipient) {
+      contactPhoto.setVisibility(View.GONE);
     } else {
       contactPhoto.setAvatar(glideRequests, recipient, true);
       contactPhoto.setVisibility(View.VISIBLE);
@@ -483,9 +490,14 @@ public class ConversationItem extends LinearLayout
   private void setStatusIcons(MessageRecord messageRecord) {
     indicatorText.setVisibility(View.GONE);
 
-    insecureImage.setVisibility(messageRecord.isSecure() ? View.GONE : View.VISIBLE);
-    bodyText.setCompoundDrawablesWithIntrinsicBounds(0, 0, messageRecord.isKeyExchange() ? R.drawable.ic_menu_login : 0, 0);
-    dateText.setText(DateUtils.getExtendedRelativeTimeSpanString(getContext(), locale, messageRecord.getTimestamp()));
+    if(isShowTime) {
+      timeContainer.setVisibility(View.VISIBLE);
+      insecureImage.setVisibility(messageRecord.isSecure() ? View.GONE : View.VISIBLE);
+      bodyText.setCompoundDrawablesWithIntrinsicBounds(0, 0, messageRecord.isKeyExchange() ? R.drawable.ic_menu_login : 0, 0);
+      dateText.setText(DateUtils.getExtendedRelativeTimeSpanString(getContext(), locale, messageRecord.getTimestamp()));
+    } else {
+      timeContainer.setVisibility(View.GONE);
+    }
 
     if (messageRecord.isFailed()) {
       setFailedStatusIcons();
@@ -610,21 +622,22 @@ public class ConversationItem extends LinearLayout
 
   @SuppressLint("SetTextI18n")
   private void setGroupMessageStatus(MessageRecord messageRecord, Recipient recipient) {
-    if (groupThread && !messageRecord.isOutgoing()) {
-      this.groupSender.setText(recipient.toShortString());
-
-      if (recipient.getName() == null && !TextUtils.isEmpty(recipient.getProfileName())) {
-        this.groupSenderProfileName.setText("~" + recipient.getProfileName());
-        this.groupSenderProfileName.setVisibility(View.VISIBLE);
-      } else {
-        this.groupSenderProfileName.setText(null);
-        this.groupSenderProfileName.setVisibility(View.GONE);
-      }
-
-      this.groupSenderHolder.setVisibility(View.VISIBLE);
-    } else {
-      this.groupSenderHolder.setVisibility(View.GONE);
-    }
+    this.groupSenderHolder.setVisibility(View.GONE);
+//    if (groupThread && !messageRecord.isOutgoing() && !isSameRecipient) {
+//      this.groupSender.setText(recipient.toShortString());
+//
+//      if (recipient.getName() == null && !TextUtils.isEmpty(recipient.getProfileName())) {
+//        this.groupSenderProfileName.setText("~" + recipient.getProfileName());
+//        this.groupSenderProfileName.setVisibility(View.VISIBLE);
+//      } else {
+//        this.groupSenderProfileName.setText(null);
+//        this.groupSenderProfileName.setVisibility(View.GONE);
+//      }
+//
+//      this.groupSenderHolder.setVisibility(View.VISIBLE);
+//    } else {
+//      this.groupSenderHolder.setVisibility(View.GONE);
+//    }
   }
 
   /// Event handlers

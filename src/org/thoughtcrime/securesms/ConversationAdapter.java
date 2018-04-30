@@ -189,9 +189,11 @@ public class ConversationAdapter <V extends View & BindableConversationItem>
   }
 
   @Override
-  protected void onBindItemViewHolder(ViewHolder viewHolder, @NonNull MessageRecord messageRecord) {
+  protected void onBindItemViewHolder(ViewHolder viewHolder, @NonNull MessageRecord messageRecord, MessageRecord lastMessageRecord) {
     long start = System.currentTimeMillis();
-    viewHolder.getView().bind(messageRecord, glideRequests, locale, batchSelected, recipient, messageRecord == recordToPulseHighlight);
+    boolean isSameRecipient = lastMessageRecord != null && lastMessageRecord.getIndividualRecipient() != null && lastMessageRecord.getIndividualRecipient().equals(messageRecord.getIndividualRecipient());
+    boolean isShowTime = false;
+    viewHolder.getView().bind(messageRecord, glideRequests, locale, batchSelected, recipient, messageRecord == recordToPulseHighlight, isSameRecipient, isShowTime);
     if (messageRecord == recordToPulseHighlight) {
       recordToPulseHighlight = null;
     }

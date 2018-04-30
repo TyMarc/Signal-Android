@@ -18,7 +18,9 @@ public interface BindableConversationItem extends Unbindable {
             @NonNull Locale             locale,
             @NonNull Set<MessageRecord> batchSelected,
             @NonNull Recipient          recipients,
-                     boolean            pulseHighlight);
+                     boolean            pulseHighlight,
+            boolean isSameRecipient,
+            boolean isShowTime);
 
   MessageRecord getMessageRecord();
 

@@ -5,9 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -55,7 +53,7 @@ public abstract class FastCursorRecyclerViewAdapter<VH extends RecyclerView.View
   }
 
   protected abstract T getRecordFromCursor(@NonNull Cursor cursor);
-  protected abstract void onBindItemViewHolder(VH viewHolder, @NonNull T record);
+  protected abstract void onBindItemViewHolder(VH viewHolder, @NonNull T record, T lastRecord);
   protected abstract long getItemId(@NonNull T record);
   protected abstract int getItemViewType(@NonNull T record);
   protected abstract boolean isRecordForId(@NonNull T record, long id);
@@ -69,12 +67,20 @@ public abstract class FastCursorRecyclerViewAdapter<VH extends RecyclerView.View
   @Override
   public void onBindItemViewHolder(VH viewHolder, @NonNull Cursor cursor) {
     T record = getRecordFromCursor(cursor);
-    onBindItemViewHolder(viewHolder, record);
+    T lastRecord = null;
+    try {
+      lastRecord = getRecordForPositionOrThrow(cursor.getPosition() + 1);
+    } catch(Exception e) {
+
+    }
+    onBindItemViewHolder(viewHolder, record, lastRecord);
   }
 
   @Override
   public void onBindFastAccessItemViewHolder(VH viewHolder, int position) {
-    onBindItemViewHolder(viewHolder, fastRecords.get(getCalculatedPosition(position)));
+    T record = fastRecords.get(getCalculatedPosition(position));
+    T lastRecord = position > 0 ? fastRecords.get(getCalculatedPosition(position - 1)) : null;
+    onBindItemViewHolder(viewHolder, record, lastRecord);
   }
 
   @Override
